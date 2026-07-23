@@ -1,10 +1,19 @@
 package com.akwiz.android.di
 
 import android.content.Context
+import androidx.datastore.core.DataStoreFactory
+import androidx.datastore.core.handlers.ReplaceFileCorruptionHandler
+import androidx.datastore.dataStoreFile
 import com.akwiz.android.BuildConfig
+import com.akwiz.android.data.Clock
 import com.akwiz.android.data.DefaultQuizRepository
 import com.akwiz.android.data.QuizRepository
 import com.akwiz.android.data.local.AssetQuestionSource
+import com.akwiz.android.data.local.DataStorePlayerStore
+import com.akwiz.android.data.local.DataStoreQuestionCache
+import com.akwiz.android.data.local.JsonSerializer
+import com.akwiz.android.data.local.PlayerState
+import com.akwiz.android.data.local.QuestionCache
 import com.akwiz.android.data.remote.QuizApi
 import com.jakewharton.retrofit2.converter.kotlinx.serialization.asConverterFactory
 import kotlinx.serialization.json.Json
@@ -43,14 +52,35 @@ class AppContainer(context: Context) {
         .build()
         .create(QuizApi::class.java)
 
+    // Two stores, split on re-derivable vs irreplaceable. A corrupt cache is replaced
+    // without touching the player's session or best streak.
+    private val cacheStore = DataStoreQuestionCache(
+        DataStoreFactory.create(
+            serializer = JsonSerializer(json, QuestionCache.serializer(), QuestionCache()),
+            corruptionHandler = ReplaceFileCorruptionHandler { QuestionCache() },
+        ) { app.dataStoreFile(CACHE_FILE) },
+    )
+
+    private val playerStore = DataStorePlayerStore(
+        DataStoreFactory.create(
+            serializer = JsonSerializer(json, PlayerState.serializer(), PlayerState()),
+            corruptionHandler = ReplaceFileCorruptionHandler { PlayerState() },
+        ) { app.dataStoreFile(PLAYER_FILE) },
+    )
+
     val quizRepository: QuizRepository = DefaultQuizRepository(
         api = api,
+        cache = cacheStore,
         bundled = AssetQuestionSource(app, json),
+        player = playerStore,
+        clock = Clock.System,
     )
 
     private companion object {
         const val BASE_URL = "https://gist.githubusercontent.com/"
         const val JSON_MEDIA_TYPE = "application/json"
         const val CALL_TIMEOUT_SECONDS = 5L
+        const val CACHE_FILE = "question_cache.json"
+        const val PLAYER_FILE = "player.json"
     }
 }
