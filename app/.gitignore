@@ -1,1 +1,4 @@
 /build
+# Roborazzi diff artifacts — golden images in src/test/screenshots ARE committed
+/src/test/screenshots/*_compare.png
+/src/test/screenshots/*_actual.png
