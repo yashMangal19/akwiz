@@ -35,9 +35,9 @@ class ProgressPersistenceTest {
     private suspend fun loadedSet(repo: DefaultQuizRepository): QuestionSet =
         repo.loadQuestions().getOrThrow()
 
-    private fun session(hash: String, updatedAt: Long = 0L, index: Int = 2) = SavedSession(
+    // Two answers → the resume index derives to 2.
+    private fun session(hash: String, updatedAt: Long = 0L) = SavedSession(
         questionSetHash = hash,
-        index = index,
         answers = listOf(SavedAnswer(1, 0, "Correct"), SavedAnswer(2, null, "Skipped")),
         currentStreak = 1,
         longestStreak = 1,
@@ -84,11 +84,13 @@ class ProgressPersistenceTest {
         assertEquals(2, repo.readProgress(set)!!.index)
     }
 
-    @Test fun `discards progress whose index is out of range`() = runTest {
+    @Test fun `discards a session with every question answered`() = runTest {
         val player = FakePlayerStore()
         val repo = repository(player)
-        val set = loadedSet(repo)
-        player.session = session(set.contentHash, index = 99)
+        val set = loadedSet(repo)   // 5 questions
+        player.session = session(set.contentHash).copy(
+            answers = (1..5).map { SavedAnswer(it, 0, "Correct") },
+        )
         assertNull(repo.readProgress(set))
     }
 
@@ -110,7 +112,7 @@ class ProgressPersistenceTest {
 
         val progress = QuizProgress(
             questionSetHash = set.contentHash,
-            index = 3,
+            index = 2,   // two answers → next question is index 2
             answers = listOf(
                 AnswerRecord.answered(1, selected = 2, isCorrect = true),
                 AnswerRecord.skipped(2),

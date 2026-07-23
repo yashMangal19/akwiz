@@ -26,7 +26,6 @@ class JsonSerializerTest {
             bestStreak = 6,
             session = SavedSession(
                 questionSetHash = "abc",
-                index = 3,
                 answers = listOf(SavedAnswer(1, 2, "Correct"), SavedAnswer(2, null, "Skipped")),
                 currentStreak = 1,
                 longestStreak = 2,
