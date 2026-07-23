@@ -1,7 +1,11 @@
 package com.akwiz.android.ui.quiz
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider.AndroidViewModelFactory.Companion.APPLICATION_KEY
 import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
+import com.akwiz.android.AkwizApplication
 import com.akwiz.android.data.QuizRepository
 import com.akwiz.android.domain.Outcome
 import com.akwiz.android.domain.QuestionSet
@@ -158,5 +162,14 @@ class QuizViewModel(
 
     private fun clearSaved() {
         viewModelScope.launch { repository.clearProgress() }
+    }
+
+    companion object {
+        val Factory = viewModelFactory {
+            initializer {
+                val app = this[APPLICATION_KEY] as AkwizApplication
+                QuizViewModel(app.container.quizRepository)
+            }
+        }
     }
 }
