@@ -63,7 +63,7 @@ fun StreakBadge(
 
     Row(
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(Spacing.xs),
+        horizontalArrangement = Arrangement.spacedBy(Spacing.xs + 2.dp),
         modifier = modifier
             .scale(scale)
             .clip(RoundedCornerShape(percent = 50))
@@ -73,7 +73,7 @@ fun StreakBadge(
                     1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(percent = 50),
                 ),
             )
-            .padding(horizontal = Spacing.sm, vertical = Spacing.xs)
+            .padding(horizontal = Spacing.md, vertical = Spacing.sm)
             .clearAndSetSemantics {
                 contentDescription = "Streak: $streak correct in a row"
             },
@@ -82,7 +82,7 @@ fun StreakBadge(
             painter = painterResource(R.drawable.ic_flame),
             contentDescription = null,
             tint = flame,
-            modifier = Modifier.size(14.dp),
+            modifier = Modifier.size(17.dp),
         )
         Text(
             text = streak.toString(),
@@ -91,11 +91,11 @@ fun StreakBadge(
         )
         // Filled pips use the active gold even while building, so progress toward
         // ignition is visible rather than grey-on-grey.
-        Row(horizontalArrangement = Arrangement.spacedBy(3.dp)) {
+        Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
             repeat(threshold) { i ->
                 Box(
                     Modifier
-                        .size(4.dp)
+                        .size(5.dp)
                         .clip(CircleShape)
                         .background(if (i < streak) quiz.streakActive else MaterialTheme.colorScheme.outline),
                 )

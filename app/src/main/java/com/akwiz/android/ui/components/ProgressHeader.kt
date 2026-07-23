@@ -40,7 +40,7 @@ fun ProgressHeader(
         ) {
             Text(
                 text = "Question $questionNumber of $total".uppercase(),
-                style = MaterialTheme.typography.labelSmall,
+                style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             StreakBadge(streak = streak)

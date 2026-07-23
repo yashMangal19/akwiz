@@ -61,7 +61,7 @@ fun QuizRoute(
                 onOption = viewModel::selectOption,
                 onSkip = viewModel::skip,
             )
-            is QuizUiState.Finished -> FinishedScreen(s, onRestart = viewModel::restart)
+            is QuizUiState.Finished -> ResultScreen(s, onRestart = viewModel::restart)
         }
 
         IgnitionRing(
