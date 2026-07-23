@@ -51,8 +51,9 @@ internal class DefaultQuizRepository(
         val session = player.readSession() ?: return null
         if (session.questionSetHash != set.contentHash) return null
         if (clock.now() - session.updatedAt > SESSION_TTL_MS) return null
-        // Resumable only if at least one question is answered and one is left.
-        if (session.answers.size !in 1 until set.questions.size) return null
+        // At least one answer, up to and including a completed run — the caller
+        // decides resume vs finished from answers.size.
+        if (session.answers.size !in 1..set.questions.size) return null
         return session.toProgressOrNull()
     }
 

@@ -14,6 +14,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.unit.dp
 import com.akwiz.android.ui.theme.Motion
 import com.akwiz.android.ui.theme.Spacing
 
@@ -51,6 +52,8 @@ fun ProgressHeader(
                 .clearAndSetSemantics {},
             color = MaterialTheme.colorScheme.primary,
             trackColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+            gapSize = 0.dp,
+            drawStopIndicator = {},   // M3 draws a dot at the track end by default
         )
     }
 }

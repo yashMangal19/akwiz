@@ -84,14 +84,18 @@ class ProgressPersistenceTest {
         assertEquals(2, repo.readProgress(set)!!.index)
     }
 
-    @Test fun `discards a session with every question answered`() = runTest {
+    // A completed run is returned (not discarded) so the caller can show the
+    // result again on relaunch; index derives to the question count.
+    @Test fun `returns a completed session with index at the end`() = runTest {
         val player = FakePlayerStore()
         val repo = repository(player)
         val set = loadedSet(repo)   // 5 questions
         player.session = session(set.contentHash).copy(
             answers = (1..5).map { SavedAnswer(it, 0, "Correct") },
         )
-        assertNull(repo.readProgress(set))
+        val progress = repo.readProgress(set)
+        assertEquals(5, progress!!.index)
+        assertEquals(5, progress.answers.size)
     }
 
     @Test fun `discards progress with an unreadable outcome`() = runTest {

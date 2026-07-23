@@ -2,6 +2,7 @@ package com.akwiz.android.ui.components
 
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.snap
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.runtime.Composable
@@ -80,7 +81,8 @@ fun ConfettiBurst(
     }
     val progress by animateFloatAsState(
         targetValue = if (playing) 1f else 0f,
-        animationSpec = tween(durationMillis, easing = LinearEasing),
+        // snap back to 0 rather than tween, so it doesn't replay in reverse
+        animationSpec = if (playing) tween(durationMillis, easing = LinearEasing) else snap(),
         label = "confetti",
     )
     if (progress <= 0f || progress >= 1f) return
@@ -131,7 +133,7 @@ fun IgnitionRing(
 
     val progress by animateFloatAsState(
         targetValue = if (playing) 1f else 0f,
-        animationSpec = tween(durationMillis, easing = LinearEasing),
+        animationSpec = if (playing) tween(durationMillis, easing = LinearEasing) else snap(),
         label = "ignition",
     )
     if (progress <= 0f || progress >= 1f) return
