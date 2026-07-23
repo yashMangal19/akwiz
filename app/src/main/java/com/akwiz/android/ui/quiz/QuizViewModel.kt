@@ -14,6 +14,7 @@ import com.akwiz.android.domain.QuizResult
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.async
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
@@ -24,6 +25,7 @@ import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
 
 const val REVEAL_HOLD_MS = 2_000L
+const val SPLASH_MIN_MS = 2_000L
 
 class QuizViewModel(
     private val repository: QuizRepository,
@@ -45,13 +47,18 @@ class QuizViewModel(
     private fun load() {
         _state.value = QuizUiState.Loading
         viewModelScope.launch {
-            repository.loadQuestions().fold(
-                onSuccess = { set ->
-                    val progress = repository.readProgress(set)
-                    _state.value = if (progress != null) {
-                        QuizUiState.ResumePrompt(set, progress)
-                    } else {
-                        freshQuiz(set)
+            // The data is often cached and returns instantly. Hold the splash for a
+            // deliberate minimum so it doesn't flash — the load runs concurrently.
+            val work = async {
+                repository.loadQuestions().map { set -> set to repository.readProgress(set) }
+            }
+            delay(SPLASH_MIN_MS)
+            work.await().fold(
+                onSuccess = { (set, progress) ->
+                    _state.value = when {
+                        progress == null -> freshQuiz(set)
+                        progress.index >= set.size -> finishedFrom(set, progress)
+                        else -> QuizUiState.ResumePrompt(set, progress)
                     }
                 },
                 onFailure = {
@@ -59,6 +66,16 @@ class QuizViewModel(
                 },
             )
         }
+    }
+
+    /** A completed run found on relaunch — show the score again, no re-celebration. */
+    private suspend fun finishedFrom(set: QuestionSet, progress: QuizProgress): QuizUiState {
+        repository.recordBestStreak(progress.longestStreak)   // idempotent
+        return QuizUiState.Finished(
+            set = set,
+            result = QuizResult(progress.answers, progress.longestStreak),
+            isPersonalBest = false,
+        )
     }
 
     fun resumeSaved() {
@@ -134,7 +151,8 @@ class QuizViewModel(
             val best = repository.bestStreak()
             val isPersonalBest = active.longestStreak > best
             repository.recordBestStreak(active.longestStreak)
-            repository.clearProgress()
+            // The completed session is kept, not cleared — reopening the app shows
+            // this result again rather than starting fresh. Restart clears it.
             _state.value = QuizUiState.Finished(active.set, result, isPersonalBest)
             if (isPersonalBest) _effects.trySend(QuizEffect.PersonalBest)
         }

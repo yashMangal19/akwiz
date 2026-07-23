@@ -43,7 +43,10 @@ android {
         unitTests {
             isIncludeAndroidResources = true
             all {
-                it.systemProperty("roborazzi.test.record", project.hasProperty("recordShots").toString())
+                val recording = project.hasProperty("recordShots")
+                it.systemProperty("roborazzi.test.record", recording.toString())
+                // When not recording, verify against the goldens and fail on a diff.
+                it.systemProperty("roborazzi.test.verify", (!recording).toString())
             }
         }
     }

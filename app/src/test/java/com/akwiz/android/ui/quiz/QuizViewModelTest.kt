@@ -199,13 +199,37 @@ class QuizViewModelTest {
         assertEquals(3, done.result.longestStreak)
     }
 
-    @Test fun `finishing records the best streak and clears the session`() = runTest(dispatcher) {
+    @Test fun `finishing records the best streak and keeps the session`() = runTest(dispatcher) {
         val repo = succeedingRepo(size = 5)
         val vm = viewModel(repo); advanceUntilIdle()
         repeat(5) { vm.answer(correct = true); tickReveal() }
         advanceUntilIdle()
-        assertTrue(repo.clears > 0)
         assertEquals(5, repo.recordedBest)
+        // Session is kept so reopening shows the result again; only restart clears it.
+        assertEquals(0, repo.clears)
+    }
+
+    @Test fun `reopening after a finished quiz shows the result again`() = runTest(dispatcher) {
+        val repo = succeedingRepo(size = 3)
+        repo.savedProgress = QuizProgress(
+            questionSetHash = "hash-3",
+            index = 3,
+            answers = someAnswers(3),
+            currentStreak = 3,
+            longestStreak = 3,
+        )
+        val vm = viewModel(repo); advanceUntilIdle()
+        val done = vm.state.value as QuizUiState.Finished
+        assertEquals(3, done.result.correct)
+        assertFalse(done.isPersonalBest)   // no re-celebration on reopen
+    }
+
+    @Test fun `the splash holds for its minimum before content appears`() = runTest(dispatcher) {
+        val vm = viewModel(succeedingRepo())
+        advanceTimeBy(SPLASH_MIN_MS - 1); runCurrent()
+        assertTrue(vm.state.value is QuizUiState.Loading)
+        advanceTimeBy(1); advanceUntilIdle()
+        assertTrue(vm.state.value is QuizUiState.Active)
     }
 
     @Test fun `beating the stored best is flagged and celebrated`() = runTest(dispatcher) {
