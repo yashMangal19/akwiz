@@ -28,7 +28,8 @@ internal data class PlayerState(
 @Serializable
 internal data class SavedSession(
     val questionSetHash: String,
-    val index: Int,
+    // No index — the resume point is answers.size, so storing it too would be two
+    // sources of truth that can drift.
     val answers: List<SavedAnswer>,
     val currentStreak: Int,
     val longestStreak: Int,

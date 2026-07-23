@@ -51,7 +51,8 @@ internal class DefaultQuizRepository(
         val session = player.readSession() ?: return null
         if (session.questionSetHash != set.contentHash) return null
         if (clock.now() - session.updatedAt > SESSION_TTL_MS) return null
-        if (session.index !in set.questions.indices) return null
+        // Resumable only if at least one question is answered and one is left.
+        if (session.answers.size !in 1 until set.questions.size) return null
         return session.toProgressOrNull()
     }
 
@@ -103,10 +104,11 @@ private fun List<QuestionDto>.toQuestionSet(origin: DataOrigin): QuestionSet? {
 // Any malformation from disk (bad outcome name, a skipped answer with a selection)
 // throws during mapping and is treated as no resumable progress.
 private fun SavedSession.toProgressOrNull(): QuizProgress? = runCatching {
+    val records = answers.map { AnswerRecord(it.questionId, it.selected, Outcome.valueOf(it.outcome)) }
     QuizProgress(
         questionSetHash = questionSetHash,
-        index = index,
-        answers = answers.map { AnswerRecord(it.questionId, it.selected, Outcome.valueOf(it.outcome)) },
+        index = records.size,   // next unanswered question
+        answers = records,
         currentStreak = currentStreak,
         longestStreak = longestStreak,
     )
@@ -114,7 +116,6 @@ private fun SavedSession.toProgressOrNull(): QuizProgress? = runCatching {
 
 private fun QuizProgress.toSaved(now: Long) = SavedSession(
     questionSetHash = questionSetHash,
-    index = index,
     answers = answers.map { SavedAnswer(it.questionId, it.selected, it.outcome.name) },
     currentStreak = currentStreak,
     longestStreak = longestStreak,
