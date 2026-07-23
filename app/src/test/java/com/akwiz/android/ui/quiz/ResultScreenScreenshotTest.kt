@@ -1,9 +1,15 @@
 package com.akwiz.android.ui.quiz
 
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import com.akwiz.android.domain.Outcome
+import com.akwiz.android.ui.components.ReviewRow
+import com.akwiz.android.ui.theme.Spacing
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onRoot
 import com.akwiz.android.domain.AnswerRecord
@@ -62,6 +68,23 @@ class ResultScreenScreenshotTest {
 
     @Test fun result_dark() =
         shot("result_dark", dark = true) { ResultScreen(finished(personalBest = false), {}) }
+
+    @Test fun review_rows_light() = shot("review_rows_light") {
+        Column(
+            Modifier.padding(Spacing.md),
+            verticalArrangement = Arrangement.spacedBy(Spacing.sm),
+        ) {
+            ReviewRow(1, "Which gesture is most consistent across Android and iOS?",
+                yourAnswer = "Swipe to dismiss", correctAnswer = "Swipe to dismiss", outcome = Outcome.Correct)
+            ReviewRow(2, "The biggest challenge with shake-to-undo?",
+                yourAnswer = "Battery drain", correctAnswer = "Accidental shakes", outcome = Outcome.Wrong)
+            ReviewRow(3, "Permission to draw a floating overlay?",
+                yourAnswer = null, correctAnswer = "SYSTEM_ALERT_WINDOW", outcome = Outcome.Skipped)
+        }
+    }
+
+    @Test fun loading_light() = shot("loading_light") { LoadingScreen() }
+    @Test fun loading_dark() = shot("loading_dark", dark = true) { LoadingScreen() }
 
     @Test fun resume_prompt_light() = shot("resume_light") {
         // Partial progress: answered one, on question 2 of 3.

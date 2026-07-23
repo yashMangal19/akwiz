@@ -1,5 +1,6 @@
 package com.akwiz.android.ui.components
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -32,9 +33,9 @@ import com.akwiz.android.ui.theme.Spacing
 import com.akwiz.android.ui.theme.quizColors
 
 /**
- * One reviewed answer. Shows the correct answer whenever you didn't get it right, so
- * a wrong or skipped row teaches; a correct row just confirms. Three signals per
- * outcome — icon, label, colour — same accessibility rule as [OptionCard].
+ * One reviewed answer. Every row shows its answer: a correct row confirms it, a wrong
+ * or skipped row shows the right one too. Three signals per outcome — icon, label,
+ * colour — same accessibility rule as [OptionCard].
  */
 @Composable
 fun ReviewRow(
@@ -53,23 +54,25 @@ fun ReviewRow(
         Outcome.Wrong -> quiz.incorrect
         Outcome.Skipped -> scheme.onSurfaceVariant
     }
-    val yourLine = if (outcome == Outcome.Skipped) "Skipped" else "You: ${yourAnswer.orEmpty()}"
+    val circle: Color = when (outcome) {
+        Outcome.Correct -> quiz.correctContainer
+        Outcome.Wrong -> quiz.incorrectContainer
+        Outcome.Skipped -> scheme.surfaceContainerHighest
+    }
 
     val description = buildString {
         append("Question ").append(questionNumber).append(". ").append(questionText).append(". ")
-        append(if (outcome == Outcome.Skipped) "Skipped." else "Your answer, $yourAnswer, ")
-        append(
-            when (outcome) {
-                Outcome.Correct -> "correct."
-                Outcome.Wrong -> "incorrect. Correct answer, $correctAnswer."
-                Outcome.Skipped -> "Correct answer, $correctAnswer."
-            },
-        )
+        when (outcome) {
+            Outcome.Correct -> append("Correct. Answer, $correctAnswer.")
+            Outcome.Wrong -> append("Your answer, $yourAnswer, incorrect. Correct answer, $correctAnswer.")
+            Outcome.Skipped -> append("Skipped. Correct answer, $correctAnswer.")
+        }
     }
 
     Surface(
         shape = MaterialTheme.shapes.medium,
-        color = scheme.surface,
+        color = scheme.background,   // sits on the surface-coloured sheet, so it reads as a card
+        border = BorderStroke(1.dp, scheme.outlineVariant),
         modifier = modifier
             .fillMaxWidth()
             .clearAndSetSemantics { contentDescription = description },
@@ -78,35 +81,55 @@ fun ReviewRow(
             Modifier.padding(Spacing.md),
             horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
         ) {
-            Box(Modifier.size(20.dp).padding(top = 2.dp), contentAlignment = Alignment.Center) {
+            Box(
+                Modifier
+                    .size(22.dp)
+                    .clip(CircleShape)
+                    .background(circle),
+                contentAlignment = Alignment.Center,
+            ) {
                 when (outcome) {
-                    Outcome.Correct -> Icon(Icons.Filled.Check, null, tint = accent, modifier = Modifier.size(18.dp))
-                    Outcome.Wrong -> Icon(Icons.Filled.Close, null, tint = accent, modifier = Modifier.size(18.dp))
-                    Outcome.Skipped -> Box(
-                        Modifier.width(10.dp).height(2.dp).clip(CircleShape).background(accent),
-                    )
+                    Outcome.Correct -> Icon(Icons.Filled.Check, null, tint = accent, modifier = Modifier.size(13.dp))
+                    Outcome.Wrong -> Icon(Icons.Filled.Close, null, tint = accent, modifier = Modifier.size(13.dp))
+                    Outcome.Skipped -> Box(Modifier.width(9.dp).height(2.dp).clip(CircleShape).background(accent))
                 }
             }
             Column(verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
                 Text(
-                    text = "$questionNumber. $questionText",
+                    text = questionText,
                     style = MaterialTheme.typography.bodyMedium,
                     color = scheme.onSurface,
                 )
-                Text(
-                    text = yourLine,
-                    style = MaterialTheme.typography.labelMedium,
-                    color = accent,
-                    fontWeight = FontWeight.Medium,
-                )
-                if (outcome != Outcome.Correct) {
-                    Text(
-                        text = "Correct: $correctAnswer",
-                        style = MaterialTheme.typography.labelMedium,
-                        color = quiz.correct,
-                    )
+                when (outcome) {
+                    Outcome.Correct -> AnswerLine("Answer", correctAnswer, quiz.correct)
+                    Outcome.Wrong -> {
+                        AnswerLine("You", yourAnswer.orEmpty(), quiz.incorrect)
+                        AnswerLine("Correct", correctAnswer, quiz.correct)
+                    }
+                    Outcome.Skipped -> {
+                        AnswerLine("You", "Skipped", scheme.onSurfaceVariant)
+                        AnswerLine("Correct", correctAnswer, quiz.correct)
+                    }
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun AnswerLine(label: String, value: String, valueColor: Color) {
+    Row(horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.width(52.dp),
+        )
+        Text(
+            text = value,
+            style = MaterialTheme.typography.labelMedium,
+            color = valueColor,
+            fontWeight = FontWeight.Medium,
+        )
     }
 }
