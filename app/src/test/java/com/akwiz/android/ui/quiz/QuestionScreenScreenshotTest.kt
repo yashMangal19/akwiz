@@ -4,6 +4,9 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onRoot
 import com.akwiz.android.domain.DataOrigin
@@ -16,6 +19,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
+import org.robolectric.RuntimeEnvironment
 import org.robolectric.annotation.GraphicsMode
 
 @RunWith(RobolectricTestRunner::class)
@@ -47,22 +51,54 @@ class QuestionScreenScreenshotTest {
     }
 
     @Test fun awaiting_light() = shot("screen_awaiting_light") {
-        QuestionScreen(active(AnswerPhase.Awaiting, streak = 2), {}, {})
+        QuestionScreen(active(AnswerPhase.Awaiting, streak = 2), {}, {}, {})
     }
 
     @Test fun awaiting_dark() = shot("screen_awaiting_dark", dark = true) {
-        QuestionScreen(active(AnswerPhase.Awaiting, streak = 2), {}, {})
+        QuestionScreen(active(AnswerPhase.Awaiting, streak = 2), {}, {}, {})
     }
 
     @Test fun revealed_wrong_light() = shot("screen_revealed_wrong_light") {
-        QuestionScreen(active(AnswerPhase.Revealed(selected = 1)), {}, {})
+        QuestionScreen(active(AnswerPhase.Revealed(selected = 1)), {}, {}, {})
     }
 
     @Test fun revealed_correct_dark() = shot("screen_revealed_correct_dark", dark = true) {
-        QuestionScreen(active(AnswerPhase.Revealed(selected = 0), streak = 3), {}, {})
+        QuestionScreen(active(AnswerPhase.Revealed(selected = 0), streak = 3), {}, {}, {})
     }
 
     @Test fun error_light() = shot("screen_error_light") {
         ErrorScreen("Couldn't load the quiz.", canRetry = true, onRetry = {})
+    }
+
+    // Reveal with a screen reader on: manual "Next question" replaces the timer.
+    @Test fun revealed_manual_advance() = shot("screen_revealed_manual_light") {
+        QuestionScreen(
+            active(AnswerPhase.Revealed(selected = 1)), {}, {}, {},
+            manualAdvance = true,
+        )
+    }
+
+    // 200% font — verify nothing clips.
+    @Test fun awaiting_large_font() {
+        RuntimeEnvironment.setQualifiers("+h1400dp")
+        compose.setContent {
+            val d = LocalDensity.current
+            CompositionLocalProvider(LocalDensity provides Density(d.density, fontScale = 2f)) {
+                AkwizTheme {
+                    Surface(Modifier.fillMaxSize()) {
+                        QuestionScreen(active(AnswerPhase.Awaiting, streak = 2), {}, {}, {})
+                    }
+                }
+            }
+        }
+        compose.onRoot().captureRoboImage("src/test/screenshots/screen_awaiting_font2.png")
+    }
+
+    // Landscape — verify it stays centred and usable.
+    @Test fun awaiting_landscape() {
+        RuntimeEnvironment.setQualifiers("w740dp-h360dp-land-xhdpi")
+        shot("screen_awaiting_landscape") {
+            QuestionScreen(active(AnswerPhase.Awaiting, streak = 2), {}, {}, {})
+        }
     }
 }

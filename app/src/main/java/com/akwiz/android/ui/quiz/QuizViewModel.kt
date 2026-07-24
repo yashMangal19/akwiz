@@ -40,9 +40,17 @@ class QuizViewModel(
 
     private var advanceJob: Job? = null
 
+    // When false (a screen reader is on), the reveal does not auto-advance; the user
+    // advances manually so they can hear the result. Set by the UI, never read here.
+    private var autoAdvance: Boolean = true
+
     init { load() }
 
     fun retry() = load()
+
+    fun setAutoAdvance(enabled: Boolean) {
+        autoAdvance = enabled
+    }
 
     private fun load() {
         _state.value = QuizUiState.Loading
@@ -111,9 +119,11 @@ class QuizViewModel(
         _effects.trySend(if (correct) QuizEffect.AnswerCorrect else QuizEffect.AnswerWrong)
         if (!active.isStreakHot && revealed.isStreakHot) _effects.trySend(QuizEffect.StreakIgnited)
 
-        advanceJob = viewModelScope.launch(dispatcher) {
-            delay(REVEAL_HOLD_MS)
-            advance()
+        if (autoAdvance) {
+            advanceJob = viewModelScope.launch(dispatcher) {
+                delay(REVEAL_HOLD_MS)
+                advance()
+            }
         }
     }
 
@@ -123,6 +133,14 @@ class QuizViewModel(
         val skipped = active.recordSkip()
         _state.value = skipped
         persist(skipped)
+        advance()
+    }
+
+    /** Advance out of a reveal now — from the Next button or a forward swipe. */
+    fun advanceNow() {
+        val active = _state.value as? QuizUiState.Active ?: return
+        if (!active.isRevealed) return
+        advanceJob?.cancel()
         advance()
     }
 

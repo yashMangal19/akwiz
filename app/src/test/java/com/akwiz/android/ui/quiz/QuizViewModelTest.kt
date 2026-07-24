@@ -171,6 +171,32 @@ class QuizViewModelTest {
         assertEquals(1, active(vm).answers.size)
     }
 
+    // ---- manual advance (screen readers) ----
+
+    @Test fun `with auto-advance off, a reveal does not advance on its own`() = runTest(dispatcher) {
+        val vm = viewModel(succeedingRepo()); advanceUntilIdle()
+        vm.setAutoAdvance(false)
+        vm.answer(correct = true)
+        advanceTimeBy(REVEAL_HOLD_MS * 3); runCurrent()
+        assertEquals(0, active(vm).index)
+        assertEquals(AnswerPhase.Revealed(0), active(vm).phase)
+    }
+
+    @Test fun `advanceNow moves on during a reveal`() = runTest(dispatcher) {
+        val vm = viewModel(succeedingRepo()); advanceUntilIdle()
+        vm.setAutoAdvance(false)
+        vm.answer(correct = true)
+        vm.advanceNow()
+        assertEquals(1, active(vm).index)
+        assertEquals(AnswerPhase.Awaiting, active(vm).phase)
+    }
+
+    @Test fun `advanceNow is inert before answering`() = runTest(dispatcher) {
+        val vm = viewModel(succeedingRepo()); advanceUntilIdle()
+        vm.advanceNow()
+        assertEquals(0, active(vm).index)
+    }
+
     // ---- guards ----
 
     @Test fun `a second tap during a reveal is ignored`() = runTest(dispatcher) {
