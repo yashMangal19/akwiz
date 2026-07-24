@@ -1,7 +1,15 @@
 package com.akwiz.android.ui.quiz
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -13,8 +21,10 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.akwiz.android.ui.components.ConfettiBurst
 import com.akwiz.android.ui.components.IgnitionRing
+import com.akwiz.android.ui.theme.Motion
 import com.akwiz.android.ui.theme.quizColors
 import com.akwiz.android.ui.theme.rememberAnimationsEnabled
+import com.akwiz.android.ui.theme.rememberTouchExplorationEnabled
 import kotlinx.coroutines.delay
 
 /**
@@ -29,6 +39,10 @@ fun QuizRoute(
     val state by viewModel.state.collectAsStateWithLifecycle()
     val haptics = rememberHaptics()
     val animationsOn = rememberAnimationsEnabled()
+    val talkBackOn = rememberTouchExplorationEnabled()
+
+    // A screen reader can't hear a 2s reveal, so it advances manually instead.
+    LaunchedEffect(talkBackOn) { viewModel.setAutoAdvance(!talkBackOn) }
 
     var igniting by remember { mutableStateOf(false) }
     var celebrating by remember { mutableStateOf(false) }
@@ -48,31 +62,47 @@ fun QuizRoute(
     LaunchedEffect(celebrating) { if (celebrating) { delay(1_100); celebrating = false } }
 
     Box(modifier.fillMaxSize()) {
-        when (val s = state) {
-            QuizUiState.Loading -> LoadingScreen()
-            is QuizUiState.Error -> ErrorScreen(s.message, s.canRetry, onRetry = viewModel::retry)
-            is QuizUiState.ResumePrompt -> ResumePromptScreen(
-                state = s,
-                onResume = viewModel::resumeSaved,
-                onStartOver = viewModel::startOver,
-            )
-            is QuizUiState.Active -> QuestionScreen(
-                state = s,
-                onOption = viewModel::selectOption,
-                onSkip = viewModel::skip,
-            )
-            is QuizUiState.Finished -> ResultScreen(s, onRestart = viewModel::restart)
+        AnimatedContent(
+            targetState = state,
+            contentKey = { it::class },   // fade between screen kinds, not within Active
+            transitionSpec = {
+                if (animationsOn) {
+                    fadeIn(tween(Motion.STANDARD)) togetherWith fadeOut(tween(Motion.STANDARD))
+                } else {
+                    EnterTransition.None togetherWith ExitTransition.None
+                }
+            },
+            label = "screen",
+        ) { s ->
+            when (s) {
+                QuizUiState.Loading -> LoadingScreen()
+                is QuizUiState.Error -> ErrorScreen(s.message, s.canRetry, onRetry = viewModel::retry)
+                is QuizUiState.ResumePrompt -> ResumePromptScreen(
+                    state = s,
+                    onResume = viewModel::resumeSaved,
+                    onStartOver = viewModel::startOver,
+                )
+                is QuizUiState.Active -> QuestionScreen(
+                    state = s,
+                    onOption = viewModel::selectOption,
+                    onSkip = viewModel::skip,
+                    onAdvance = viewModel::advanceNow,
+                    manualAdvance = talkBackOn,
+                    animate = animationsOn,
+                )
+                is QuizUiState.Finished -> ResultScreen(s, onRestart = viewModel::restart)
+            }
         }
 
         IgnitionRing(
             playing = igniting,
-            color = androidx.compose.material3.MaterialTheme.quizColors.streakActive,
+            color = MaterialTheme.quizColors.streakActive,
             modifier = Modifier.fillMaxSize(),
             animate = animationsOn,
         )
         ConfettiBurst(
             playing = celebrating,
-            colors = androidx.compose.material3.MaterialTheme.quizColors.celebration,
+            colors = MaterialTheme.quizColors.celebration,
             modifier = Modifier.fillMaxSize(),
             animate = animationsOn,
         )
