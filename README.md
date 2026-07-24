@@ -46,7 +46,7 @@ Built with Kotlin and Jetpack Compose.
 ## Run it
 
 ```
-git clone <repo> && cd Akwiz
+git clone https://github.com/yashMangal19/akwiz.git && cd akwiz
 ./gradlew installDebug     # with a device or emulator connected
 # or open in Android Studio and press Run
 ```
