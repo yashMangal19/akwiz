@@ -76,7 +76,7 @@ Each was one focused, testable step.
 | 7 | The question screen | Wiring the logic to the screens — the app plays for the first time |
 | 8 | Results & review | The score, the per-answer review, the resume prompt |
 | 9 | Polish & access | Transitions, swipe-to-advance, the screen-reader work |
-| 10 | Verify & ship | Testing on a real device, this write-up, the README |
+| 10 | Verify & ship | Testing of edge cases, this write-up, the README |
 
 By the end of phase 5 the entire quiz worked in tests before a single screen existed. Phases 6–9
 just drew the screens for logic that was already proven right.
@@ -101,7 +101,7 @@ finishable in the time.
 What that looked like in practice: I made the decisions and set the direction — which architecture,
 which trade-offs, what to build and what to leave out — and the AI did a lot of the execution,
 writing code and tests against that direction. Every choice was mine to approve, and I read every
-line that went in. The AI was the hands; the calls were mine.
+line that went in.
 
 I think that's the honest and useful way to work with these tools — not to hand over the thinking,
 but to move faster on the doing once the thinking is done.
